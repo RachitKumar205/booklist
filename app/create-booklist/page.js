@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { getBooks } from '../../utils/booklists'; // Assuming a function to fetch books from Firebase
+import RootLayout from './layout';
 
 // Firebase configuration (replace with yours)
 const firebaseConfig = {
@@ -51,66 +52,68 @@ function CreateBooklistPage() {
     };
 
     return (
-        <div className="create-booklist-page">
+        <RootLayout>
             <div className="create-booklist-page">
-                <h1>Create a New Booklist</h1>
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="name">Booklist Name:</label>
+                <div className="create-booklist-page">
+                    <h1>Create a New Booklist</h1>
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label htmlFor="name">Booklist Name:</label>
 
 
-                        <input
+                            <input
 
-                            type="text"
+                                type="text"
 
-                            id="name"
+                                id="name"
 
-                            value={name}
+                                value={name}
 
-                            onChange={(e) => setName(e.target.value)} required />
-                    </div>
-
-
-                    <div
-
-                        className="form-group">
+                                onChange={(e) => setName(e.target.value)} required />
+                        </div>
 
 
-                        <label
+                        <div
 
-                            htmlFor="image">Booklist Image:</label>
-                        <input type="file" id="image" onChange={(e) => setImage(e.target.files[0])} required />
-                    </div>
+                            className="form-group">
 
-                    {/* Book selection section (same as before) */}
 
-                    <button type="submit">Create Booklist</button>
-                </form>
+                            <label
+
+                                htmlFor="image">Booklist Image:</label>
+                            <input type="file" id="image" onChange={(e) => setImage(e.target.files[0])} required />
+                        </div>
+
+                        {/* Book selection section (same as before) */}
+
+                        <button type="submit">Create Booklist</button>
+                    </form>
+                </div>
+
+                <h2>Choose Books:</h2>
+                <div className="book-selection">
+                    {books.map((book) => (
+                        <label key={book.id}>
+                            <input
+                                type="checkbox"
+                                value={book.id}
+                                checked={selectedBooks.includes(book.id)}
+                                onChange={(e) => {
+                                    setSelectedBooks((prevSelectedBooks) =>
+                                        e.target.checked
+                                            ? [...prevSelectedBooks, book.id]
+                                            : prevSelectedBooks.filter((id) => id !== book.id)
+                                    );
+                                }}
+                            />
+                            {book.title}
+                        </label>
+                    ))}
+                </div>
+
+                <button type="submit">Create Booklist</button>
             </div>
-
-            <h2>Choose Books:</h2>
-            <div className="book-selection">
-                {books.map((book) => (
-                    <label key={book.id}>
-                        <input
-                            type="checkbox"
-                            value={book.id}
-                            checked={selectedBooks.includes(book.id)}
-                            onChange={(e) => {
-                                setSelectedBooks((prevSelectedBooks) =>
-                                    e.target.checked
-                                        ? [...prevSelectedBooks, book.id]
-                                        : prevSelectedBooks.filter((id) => id !== book.id)
-                                );
-                            }}
-                        />
-                        {book.title}
-                    </label>
-                ))}
-            </div>
-
-            <button type="submit">Create Booklist</button>
-        </div>
+        </RootLayout>
     );
 }
 

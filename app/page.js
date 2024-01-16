@@ -1,11 +1,20 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import RootLayout from './layout';
+
+// database context
+import { useDb } from '../data/dbContext';
+
+// models
+import BookSchema from '@/db/models/BookSchema';
 
 function Home() {
     const [bookName, setBookName] = useState('');
     const [bookData, setBookData] = useState(null);
     const [error, setError] = useState(null);
+
+    const db = useDb();
 
     useEffect(() => {
         const fetchBookInfo = async () => {
@@ -24,7 +33,7 @@ function Home() {
     }, [bookName]);
 
     return (
-        <div>
+        <RootLayout>
             <input
                 type="text"
                 value={bookName}
@@ -40,7 +49,7 @@ function Home() {
                     <p>{bookData.volumeInfo.description}</p>
                 </div>
             )}
-        </div>
+        </RootLayout>
     );
 }
 
