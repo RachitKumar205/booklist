@@ -1,10 +1,10 @@
-'use client'
+'use client';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import RootLayout from './layout';
 
 // database context
-import { useDb } from '../data/dbContext';
+import { useDb } from '../db/dbContext';
 
 // models
 import BookSchema from '@/db/models/BookSchema';

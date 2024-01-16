@@ -1,3 +1,4 @@
+'use client';
 // context to be used in next.js pages
 import React, { createContext, useContext } from 'react';
 import connectDB from './conn';
