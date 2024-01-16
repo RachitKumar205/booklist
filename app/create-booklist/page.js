@@ -1,118 +1,140 @@
 'use client'
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import RootLayout from '../layout';
 
-import React, { useState } from 'react';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { getBooks } from '../../utils/booklists'; // Assuming a function to fetch books from Firebase
-import RootLayout from './layout';
+// database context
+import { useDb } from '../../db/dbContext';
 
-// Firebase configuration (replace with yours)
-const firebaseConfig = {
-    apiKey: "AIzaSyAmy9KQfp36T1wjbRs7-OmCVElNotV7Rys",
-    authDomain: "readlist-b5c0a.firebaseapp.com",
-    projectId: "readlist-b5c0a",
-    storageBucket: "readlist-b5c0a.appspot.com",
-    messagingSenderId: "601700443297",
-    appId: "1:601700443297:web:9121e741673e9166343ce0",
-    measurementId: "G-GSLKSSBBP9"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const booklistsCollection = collection(db, 'booklists');
-const booksCollection = collection(db, 'books'); // Assuming a collection for books
+// models
+import BookSchema from '@/db/models/BookSchema';
+import BooklistSchema from '@/db/models/BooklistSchema';
 
 function CreateBooklistPage() {
-    const [name, setName] = useState('');
-    const [image, setImage] = useState(null);
-    const [selectedBooks, setSelectedBooks] = useState([]);
-    const [books, setBooks] = useState([]);
+    const [booklistName, setBooklistName] = useState('');
+    const [booklistImage, setBooklistImage] = useState(null);
+    const [bookName, setBookName] = useState('');
+    const [bookData, setBookData] = useState(null);
+    const [error, setError] = useState(null);
+    const [booksInBooklist, setBooksInBooklist] = useState([]); // New state for books in booklist
+
+    const db = useDb();
 
     useEffect(() => {
-        const fetchBooks = async () => {
-            const fetchedBooks = await getBooks();
-            setBooks(fetchedBooks);
+        const fetchBookInfo = async () => {
+            if (bookName) {
+                try {
+                    const response = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=${bookName}`);
+                    setBookData(response.data.items[0]);
+                    setError(null);
+                } catch (error) {
+                    setError('Error fetching book information');
+                }
+            }
         };
-        fetchBooks();
-    }, []);
+
+        fetchBookInfo();
+    }, [bookName]);
+
+    const handleAddBookToBooklist = async () => {
+        try {
+            // Create the book (if bookData is available)
+            if (bookData) {
+                const newBook = new BookSchema({
+                    bookID: bookData.id,
+                    title: bookData.volumeInfo.title,
+                    authors: bookData.volumeInfo.authors,
+                    description: bookData.volumeInfo.description,
+                    image: bookData.volumeInfo.imageLinks.thumbnail,
+                    read: false,
+                });
+                const savedBook = await newBook.save();
+
+                // Add the book to the booksInBooklist state
+                setBooksInBooklist((prevBooks) => [...prevBooks, savedBook]);
+            }
+        } catch (error) {
+            setError('Error creating book');
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (name && image && selectedBooks.length > 0) {
-            const newBooklist = {
-                id: booklistsCollection.doc().id, // Generate unique ID from Firestore
-                name,
-                image,
-                books: selectedBooks.map((bookId) => ({ id: bookId })), // Store book IDs
-            };
-            await addDoc(booklistsCollection, newBooklist);
-            setName('');
-            setImage(null);
-            setSelectedBooks([]);
+        try {
+            // Create the booklist
+            const newBooklist = new BooklistSchema({
+                name: booklistName,
+                image: booklistImage,
+                books: booksInBooklist.map((book) => book._id), // Add books from state
+            });
+            const savedBooklist = await newBooklist.save();
+
+            // Reset form fields and bookData
+            setBooklistName('');
+            setBooklistImage(null);
+            setBookName('');
+            setBookData(null);
+            setBooksInBooklist([]); // Clear booksInBooklist
+            setError(null);
+        } catch (error) {
+            setError('Error creating booklist or saving books');
         }
     };
 
     return (
         <RootLayout>
-            <div className="create-booklist-page">
-                <div className="create-booklist-page">
-                    <h1>Create a New Booklist</h1>
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label htmlFor="name">Booklist Name:</label>
-
-
-                            <input
-
-                                type="text"
-
-                                id="name"
-
-                                value={name}
-
-                                onChange={(e) => setName(e.target.value)} required />
-                        </div>
-
-
-                        <div
-
-                            className="form-group">
-
-
-                            <label
-
-                                htmlFor="image">Booklist Image:</label>
-                            <input type="file" id="image" onChange={(e) => setImage(e.target.files[0])} required />
-                        </div>
-
-                        {/* Book selection section (same as before) */}
-
-                        <button type="submit">Create Booklist</button>
-                    </form>
+            <h1>Create a New Booklist</h1>
+            <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                    <label htmlFor="booklistName">Booklist Name:</label>
+                    <input type="text" id="booklistName" value={booklistName} onChange={(e) => setBooklistName(e.target.value)} required />
                 </div>
-
-                <h2>Choose Books:</h2>
-                <div className="book-selection">
-                    {books.map((book) => (
-                        <label key={book.id}>
-                            <input
-                                type="checkbox"
-                                value={book.id}
-                                checked={selectedBooks.includes(book.id)}
-                                onChange={(e) => {
-                                    setSelectedBooks((prevSelectedBooks) =>
-                                        e.target.checked
-                                            ? [...prevSelectedBooks, book.id]
-                                            : prevSelectedBooks.filter((id) => id !== book.id)
-                                    );
-                                }}
-                            />
-                            {book.title}
-                        </label>
-                    ))}
+                <div className="form-group">
+                    <label htmlFor="booklistImage">Booklist Image:</label>
+                    <input type="file" id="booklistImage" onChange={(e) => setBooklistImage(e.target.files[0])} required />
                 </div>
+                {booksInBooklist.length > 0 && (
+                    <>
+                        <h2>Books in Booklist:</h2>
+                        <ul>
+                            {booksInBooklist.map((book) => (
+                                <li key={book._id}>
+                                    <img src={book.image} alt={book.title} style={{ width: '50px' }} />
+                                    {book.title} by {book.authors.join(', ')}
+                                </li>
+                            ))}
+                        </ul>
+                    </>
+                )}
+
+                {/* Book search input and display (similar to Home page) */}
+                <input
+                    type="text"
+                    value={bookName}
+                    onChange={(e) => setBookName(e.target.value)}
+                    placeholder="Enter book name"
+                />
+                {error && <p className="error">{error}</p>}
+                {bookData && (
+                    <div>
+                        <h2>{bookData.volumeInfo.title}</h2>
+                        <p>{bookData.volumeInfo.authors}</p>
+                        {bookData && bookData.volumeInfo.imageLinks ? (
+                            <img src={bookData.volumeInfo.imageLinks.thumbnail} alt={bookData.volumeInfo.title} />
+                        ) : (
+                            <p>Loading book image...</p>
+                        )}
+                        <p>{bookData.volumeInfo.description}</p>
+                        <button type="button" onClick={() => {
+                            // Add book to booklist (implementation logic here)
+                        }}>Add Book to Booklist</button>
+
+                    </div>
+                )}
 
                 <button type="submit">Create Booklist</button>
-            </div>
+            </form>
         </RootLayout>
     );
 }

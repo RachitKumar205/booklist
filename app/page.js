@@ -45,7 +45,11 @@ function Home() {
                 <div>
                     <h2>{bookData.volumeInfo.title}</h2>
                     <p>{bookData.volumeInfo.authors}</p>
-                    <img src={bookData.volumeInfo.imageLinks.thumbnail} alt={bookData.volumeInfo.title} />
+                    {bookData && bookData.volumeInfo.imageLinks ? (
+                        <img src={bookData.volumeInfo.imageLinks.thumbnail} alt={bookData.volumeInfo.title} />
+                    ) : (
+                        <p>Loading book image...</p>
+                    )}
                     <p>{bookData.volumeInfo.description}</p>
                 </div>
             )}

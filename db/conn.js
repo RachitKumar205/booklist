@@ -20,7 +20,6 @@ const connectDB = async () => {
     return connection;
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error.message} for ${process.env.MONGODB_URI}`);
-    process.exit(1);
   }
 };
 
